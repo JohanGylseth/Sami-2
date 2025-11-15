@@ -32,8 +32,8 @@ export default class LanguagePuzzleScene extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5);
         
-        // Instruction
-        this.add.text(width / 2, 100, gameContent.challenges.languagePuzzle.instruction, {
+        // Instruction with humor
+        this.add.text(width / 2, 100, 'Elder Áile needs your help! Match the Sámi words to learn the language! 🎓', {
             fontSize: '18px',
             fill: COLORS.TEXT,
             fontFamily: 'Arial',
@@ -56,7 +56,7 @@ export default class LanguagePuzzleScene extends Phaser.Scene {
         const elder = new Character(this, 150, height - 150, elderData);
         elder.create();
         
-        // Create word buttons (left side)
+        // Create word buttons (left side) with better visuals
         const wordStartY = 200;
         const wordSpacing = 60;
         this.wordButtons = [];
@@ -71,6 +71,25 @@ export default class LanguagePuzzleScene extends Phaser.Scene {
             );
             wordButton.setStrokeStyle(2, COLORS.PRIMARY);
             wordButton.setInteractive({ useHandCursor: true });
+            
+            // Add category icon
+            const iconMap = {
+                animals: '🦌',
+                nature: '🌲',
+                culture: '🎨'
+            };
+            const icon = iconMap[item.category] || '📝';
+            
+            const iconText = this.add.text(
+                200 - 100,
+                wordStartY + index * wordSpacing,
+                icon,
+                {
+                    fontSize: '24px',
+                    fontFamily: 'Arial'
+                }
+            );
+            iconText.setOrigin(0.5);
             
             const wordText = this.add.text(
                 200,
@@ -91,12 +110,24 @@ export default class LanguagePuzzleScene extends Phaser.Scene {
             wordButton.on('pointerover', () => {
                 if (!wordButton.matched) {
                     wordButton.setFillStyle(COLORS.BUTTON_HOVER);
+                    this.tweens.add({
+                        targets: wordButton,
+                        scaleX: 1.05,
+                        scaleY: 1.05,
+                        duration: 200
+                    });
                 }
             });
             
             wordButton.on('pointerout', () => {
                 if (!wordButton.matched) {
                     wordButton.setFillStyle(COLORS.BUTTON);
+                    this.tweens.add({
+                        targets: wordButton,
+                        scaleX: 1,
+                        scaleY: 1,
+                        duration: 200
+                    });
                 }
             });
             
@@ -215,55 +246,119 @@ export default class LanguagePuzzleScene extends Phaser.Scene {
             this.selectedWord = null;
             this.matches++;
             
-            // Show success feedback
+            // Show success feedback with humor
+            const successMessages = [
+                'Excellent! 🎉',
+                'Perfect! 🌟',
+                'You\'re a language master! 🏆',
+                'Amazing! Keep it up! 💪',
+                'Brilliant! You\'re learning! 📚',
+                'Wow! You got it! 🎊'
+            ];
+            const msg = successMessages[Math.floor(Math.random() * successMessages.length)];
+            
             const feedback = this.add.text(
                 this.cameras.main.centerX,
                 this.cameras.main.centerY,
-                'Correct!',
+                msg,
                 {
-                    fontSize: '32px',
+                    fontSize: '36px',
                     fill: COLORS.SECONDARY,
-                    fontFamily: 'Arial'
+                    fontFamily: 'Arial',
+                    stroke: '#000',
+                    strokeThickness: 4
                 }
             );
             feedback.setOrigin(0.5);
             feedback.setAlpha(0);
+            feedback.setScale(0.5);
             
+            // Animate with bounce
             this.tweens.add({
                 targets: feedback,
                 alpha: 1,
-                duration: 300,
+                scale: 1.2,
+                duration: 400,
+                ease: 'Back.easeOut',
                 yoyo: true,
-                hold: 500,
-                onComplete: () => feedback.destroy()
+                hold: 600,
+                onComplete: () => {
+                    this.tweens.add({
+                        targets: feedback,
+                        alpha: 0,
+                        scale: 0.8,
+                        duration: 300,
+                        onComplete: () => feedback.destroy()
+                    });
+                }
             });
+            
+            // Add sparkle effect
+            for (let i = 0; i < 5; i++) {
+                const sparkle = this.add.circle(
+                    wordButton.x + (Math.random() - 0.5) * 100,
+                    wordButton.y + (Math.random() - 0.5) * 100,
+                    5,
+                    0xffd700
+                );
+                sparkle.setAlpha(0);
+                this.tweens.add({
+                    targets: sparkle,
+                    alpha: 1,
+                    scale: 1.5,
+                    duration: 300,
+                    yoyo: true,
+                    onComplete: () => sparkle.destroy()
+                });
+            }
             
             // Check if puzzle complete
             if (this.matches >= this.totalMatches) {
                 this.completeChallenge();
             }
         } else {
-            // Wrong match
+            // Wrong match with funny feedback
+            const failMessages = [
+                'Not quite! Try again! 😊',
+                'Almost! Keep trying! 💪',
+                'Hmm, not that one! 🤔',
+                'Close, but not quite! 🎯',
+                'Elder Áile says: "Try again, young one!" 👴',
+                'Oops! Wrong match! 😅'
+            ];
+            const msg = failMessages[Math.floor(Math.random() * failMessages.length)];
+            
             const feedback = this.add.text(
                 this.cameras.main.centerX,
                 this.cameras.main.centerY,
-                'Try again!',
+                msg,
                 {
-                    fontSize: '32px',
+                    fontSize: '28px',
                     fill: COLORS.ACCENT,
-                    fontFamily: 'Arial'
+                    fontFamily: 'Arial',
+                    stroke: '#000',
+                    strokeThickness: 3
                 }
             );
             feedback.setOrigin(0.5);
             feedback.setAlpha(0);
             
+            // Shake animation
             this.tweens.add({
                 targets: feedback,
                 alpha: 1,
-                duration: 300,
+                x: { from: feedback.x - 10, to: feedback.x + 10 },
+                duration: 200,
+                repeat: 3,
                 yoyo: true,
-                hold: 500,
-                onComplete: () => feedback.destroy()
+                onComplete: () => {
+                    this.tweens.add({
+                        targets: feedback,
+                        alpha: 0,
+                        duration: 300,
+                        onComplete: () => feedback.destroy()
+                    });
+                }
             });
             
             // Deselect

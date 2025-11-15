@@ -66,21 +66,34 @@ export default class ReindeerHerdingScene extends Phaser.Scene {
             align: 'center'
         }).setOrigin(0.5);
         
-        // Create reindeer herd
+        // Create reindeer herd with better graphics
         const startX = 200;
         const startY = height / 2;
         
         for (let i = 0; i < this.herdSize; i++) {
-            const reindeer = this.add.circle(
+            // Create more realistic reindeer shape
+            const reindeer = this.add.container(
                 startX + i * 30,
-                startY + (Math.random() - 0.5) * 40,
-                15,
-                0x8b4513
+                startY + (Math.random() - 0.5) * 40
             );
-            reindeer.setStrokeStyle(2, 0x654321);
-            reindeer.velocityX = 0;
-            reindeer.velocityY = 0;
+            
+            // Body (ellipse)
+            const body = this.add.ellipse(0, 0, 30, 20, 0x8b4513);
+            body.setStrokeStyle(2, 0x654321);
+            
+            // Head
+            const head = this.add.circle(-15, -5, 10, 0x8b4513);
+            head.setStrokeStyle(2, 0x654321);
+            
+            // Antlers (simple)
+            const antler1 = this.add.line(0, -15, -5, -10, -8, -18, 0x654321, 1);
+            antler1.setLineWidth(2);
+            const antler2 = this.add.line(0, -15, 5, -10, 8, -18, 0x654321, 1);
+            antler2.setLineWidth(2);
+            
+            reindeer.add([body, head, antler1, antler2]);
             reindeer.safe = false;
+            reindeer.setInteractive(new Phaser.Geom.Circle(0, 0, 20), Phaser.Geom.Circle.Contains);
             this.herd.push(reindeer);
         }
         
@@ -136,14 +149,24 @@ export default class ReindeerHerdingScene extends Phaser.Scene {
     createHazards() {
         const { width, height } = this.cameras.main;
         
-        // Create predator (wolf)
-        const wolf = this.add.circle(
-            Phaser.Math.Between(400, 800),
-            Phaser.Math.Between(200, 500),
-            25,
-            0x696969
-        );
-        wolf.setStrokeStyle(2, 0x000000);
+        // Create predator (wolf) with better graphics
+        const wolfX = Phaser.Math.Between(400, 800);
+        const wolfY = Phaser.Math.Between(200, 500);
+        const wolf = this.add.container(wolfX, wolfY);
+        
+        // Wolf body
+        const wolfBody = this.add.ellipse(0, 0, 40, 25, 0x696969);
+        wolfBody.setStrokeStyle(2, 0x000000);
+        
+        // Wolf head
+        const wolfHead = this.add.circle(-15, -5, 12, 0x696969);
+        wolfHead.setStrokeStyle(2, 0x000000);
+        
+        // Eyes (scary!)
+        const eye1 = this.add.circle(-18, -7, 2, 0xff0000);
+        const eye2 = this.add.circle(-12, -7, 2, 0xff0000);
+        
+        wolf.add([wolfBody, wolfHead, eye1, eye2]);
         wolf.speed = 50;
         wolf.direction = Phaser.Math.Between(0, 360);
         this.hazards.push({ type: 'predator', sprite: wolf });
@@ -172,11 +195,43 @@ export default class ReindeerHerdingScene extends Phaser.Scene {
     moveHazards() {
         this.hazards.forEach(hazard => {
             if (hazard.type === 'predator') {
-                // Move predator randomly
-                const angle = Phaser.Math.Between(0, 360);
-                const distance = 30;
-                hazard.sprite.x += Math.cos(Phaser.Math.DegToRad(angle)) * distance;
-                hazard.sprite.y += Math.sin(Phaser.Math.DegToRad(angle)) * distance;
+                // Move predator towards nearest reindeer
+                let nearestReindeer = null;
+                let nearestDist = Infinity;
+                
+                this.herd.forEach(reindeer => {
+                    if (!reindeer.safe) {
+                        const dist = Phaser.Math.Distance.Between(
+                            hazard.sprite.x,
+                            hazard.sprite.y,
+                            reindeer.x,
+                            reindeer.y
+                        );
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            nearestReindeer = reindeer;
+                        }
+                    }
+                });
+                
+                if (nearestReindeer) {
+                    // Move towards nearest reindeer
+                    const dx = nearestReindeer.x - hazard.sprite.x;
+                    const dy = nearestReindeer.y - hazard.sprite.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0) {
+                        const speed = 1.5;
+                        hazard.sprite.x += (dx / distance) * speed;
+                        hazard.sprite.y += (dy / distance) * speed;
+                    }
+                } else {
+                    // No reindeer to chase, move randomly
+                    const angle = Phaser.Math.Between(0, 360);
+                    const distance = 20;
+                    hazard.sprite.x += Math.cos(Phaser.Math.DegToRad(angle)) * distance;
+                    hazard.sprite.y += Math.sin(Phaser.Math.DegToRad(angle)) * distance;
+                }
                 
                 // Keep in bounds
                 hazard.sprite.x = Phaser.Math.Clamp(hazard.sprite.x, 100, this.cameras.main.width - 100);
@@ -204,13 +259,26 @@ export default class ReindeerHerdingScene extends Phaser.Scene {
         
         // Move herd (follow leader behavior)
         this.herd.forEach((reindeer, index) => {
+            // Only move if not safe
             if (!reindeer.safe) {
                 // Leader follows input, others follow previous
                 if (index === 0) {
                     reindeer.x += moveX;
                     reindeer.y += moveY;
                 } else {
-                    const leader = this.herd[index - 1];
+                    // Find the closest non-safe reindeer ahead to follow
+                    let leader = null;
+                    for (let i = index - 1; i >= 0; i--) {
+                        if (!this.herd[i].safe) {
+                            leader = this.herd[i];
+                            break;
+                        }
+                    }
+                    // If no leader ahead, follow the first one (even if safe)
+                    if (!leader) {
+                        leader = this.herd[0];
+                    }
+                    
                     const dx = leader.x - reindeer.x;
                     const dy = leader.y - reindeer.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -234,10 +302,29 @@ export default class ReindeerHerdingScene extends Phaser.Scene {
                 );
                 
                 if (distToTarget < 75) {
-                    reindeer.safe = true;
-                    reindeer.setFillStyle(0x90ee90);
-                    this.score += 20;
-                    this.scoreText.setText(`Score: ${this.score}`);
+                    if (!reindeer.safe) {
+                        reindeer.safe = true;
+                        // Change color of body to green
+                        reindeer.list[0].setFillStyle(0x90ee90);
+                        this.score += 20;
+                        this.scoreText.setText(`Score: ${this.score}`);
+                        
+                        // Funny feedback
+                        const messages = ['Safe! 🦌', 'One down!', 'Good job!', 'Keep going!'];
+                        const msg = messages[Math.floor(Math.random() * messages.length)];
+                        const feedback = this.add.text(reindeer.x, reindeer.y - 30, msg, {
+                            fontSize: '16px',
+                            fill: COLORS.SECONDARY,
+                            fontFamily: 'Arial'
+                        });
+                        this.tweens.add({
+                            targets: feedback,
+                            alpha: 0,
+                            y: feedback.y - 20,
+                            duration: 1000,
+                            onComplete: () => feedback.destroy()
+                        });
+                    }
                 }
                 
                 // Check collision with hazards
@@ -249,10 +336,35 @@ export default class ReindeerHerdingScene extends Phaser.Scene {
                         hazard.sprite.y
                     );
                     
-                    if (hazard.type === 'predator' && dist < 40) {
-                        // Predator caught reindeer - lose points
-                        this.score = Math.max(0, this.score - 10);
+                    if (hazard.type === 'predator' && dist < 35) {
+                        // Wolf caught reindeer - stop it and lose points
+                        reindeer.safe = false;
+                        // Change color of body to red
+                        reindeer.list[0].setFillStyle(0xe74c3c);
+                        this.score = Math.max(0, this.score - 15);
                         this.scoreText.setText(`Score: ${this.score}`);
+                        
+                        // Show warning
+                        const warning = this.add.text(reindeer.x, reindeer.y - 30, 'Oh no! 🐺', {
+                            fontSize: '18px',
+                            fill: COLORS.ACCENT,
+                            fontFamily: 'Arial',
+                            stroke: '#000',
+                            strokeThickness: 3
+                        });
+                        this.tweens.add({
+                            targets: warning,
+                            alpha: 0,
+                            duration: 1500,
+                            onComplete: () => warning.destroy()
+                        });
+                        
+                        // Reset reindeer after a moment
+                        this.time.delayedCall(1000, () => {
+                            if (reindeer && !reindeer.safe) {
+                                reindeer.list[0].setFillStyle(0x8b4513);
+                            }
+                        });
                     } else if (hazard.type === 'weather' && dist < 80) {
                         // Weather slows down reindeer
                         reindeer.x -= moveX * 0.5;

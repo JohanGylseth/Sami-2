@@ -13,6 +13,7 @@ export class ProgressTracker {
             this.completedChallenges = data.completedChallenges || [];
             this.currentChapter = data.currentChapter || 1;
             this.moralChoices = data.moralChoices || {};
+            this.villageItems = data.villageItems || [];
         } else {
             this.reset();
         }
@@ -24,6 +25,7 @@ export class ProgressTracker {
         this.completedChallenges = [];
         this.currentChapter = 1;
         this.moralChoices = {};
+        this.villageItems = [];
         this.saveProgress();
     }
 
@@ -34,6 +36,7 @@ export class ProgressTracker {
             completedChallenges: this.completedChallenges,
             currentChapter: this.currentChapter,
             moralChoices: this.moralChoices,
+            villageItems: this.villageItems || [],
             lastSaved: Date.now()
         };
         localStorage.setItem('samiQuestProgress', JSON.stringify(data));
@@ -90,6 +93,23 @@ export class ProgressTracker {
     getProgressPercentage() {
         const totalChallenges = 7; // Total number of challenges
         return Math.round((this.completedChallenges.length / totalChallenges) * 100);
+    }
+
+    addVillageItem(itemId) {
+        if (!this.villageItems.includes(itemId)) {
+            this.villageItems.push(itemId);
+            this.saveProgress();
+            return true;
+        }
+        return false;
+    }
+
+    hasVillageItem(itemId) {
+        return this.villageItems.includes(itemId);
+    }
+
+    getVillageItems() {
+        return this.villageItems || [];
     }
 }
 

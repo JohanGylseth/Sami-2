@@ -42,6 +42,7 @@ export const SCENES = {
     MENU: 'MenuScene',
     INTRO: 'IntroScene',
     WORLD_MAP: 'WorldMapScene',
+    VILLAGE: 'VillageScene',
     LANGUAGE_PUZZLE: 'LanguagePuzzleScene',
     REINDEER_HERDING: 'ReindeerHerdingScene',
     DUODJI_CRAFTING: 'DuodjiCraftingScene',

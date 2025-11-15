@@ -6,6 +6,7 @@ import { SCENES } from './config.js';
 import MenuScene from './scenes/MenuScene.js';
 import IntroScene from './scenes/IntroScene.js';
 import WorldMapScene from './scenes/WorldMapScene.js';
+import VillageScene from './scenes/VillageScene.js';
 import LanguagePuzzleScene from './scenes/LanguagePuzzleScene.js';
 import ReindeerHerdingScene from './scenes/ReindeerHerdingScene.js';
 import DuodjiCraftingScene from './scenes/DuodjiCraftingScene.js';
@@ -22,6 +23,7 @@ const config = {
         MenuScene,
         IntroScene,
         WorldMapScene,
+        VillageScene,
         LanguagePuzzleScene,
         ReindeerHerdingScene,
         DuodjiCraftingScene,

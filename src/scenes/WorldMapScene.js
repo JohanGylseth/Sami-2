@@ -168,6 +168,36 @@ export default class WorldMapScene extends Phaser.Scene {
             });
         }
         
+        // Village button
+        const villageButton = this.add.rectangle(
+            width - 150,
+            height - 50,
+            200,
+            50,
+            COLORS.SECONDARY
+        );
+        villageButton.setStrokeStyle(3, COLORS.PRIMARY);
+        villageButton.setInteractive({ useHandCursor: true });
+        
+        const villageText = this.add.text(width - 150, height - 50, '🏘️ My Village', {
+            fontSize: '20px',
+            fill: COLORS.TEXT,
+            fontFamily: 'Arial'
+        });
+        villageText.setOrigin(0.5);
+        
+        villageButton.on('pointerover', () => {
+            villageButton.setFillStyle(0x27ae60);
+        });
+        
+        villageButton.on('pointerout', () => {
+            villageButton.setFillStyle(COLORS.SECONDARY);
+        });
+        
+        villageButton.on('pointerdown', () => {
+            this.scene.start(SCENES.VILLAGE);
+        });
+        
         // Menu button
         const menuButton = this.add.text(50, height - 50, 'Menu', {
             fontSize: '20px',
